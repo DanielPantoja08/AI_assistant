@@ -8,6 +8,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
 }
 
 interface ChatMessageProps {
@@ -41,6 +42,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         >
           {isUser ? (
             message.content
+          ) : message.isStreaming ? (
+            <span className="whitespace-pre-wrap">{message.content}</span>
           ) : (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { Plus, StopCircle } from "lucide-react";
-import { sendMessage, endSession } from "@/lib/api";
+import {
+  streamMessage,
+  endSession,
+  getChatHistory,
+  getOrCreateSessionId,
+  saveSessionId,
+  clearSessionId,
+  type HistoryMessage,
+} from "@/lib/api";
 import ChatMessage, { TypingIndicator, type Message } from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import { Button } from "@/components/ui/button";
@@ -9,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [sessionId, setSessionId] = useState(() => uuidv4());
+  const [sessionId, setSessionId] = useState(() => getOrCreateSessionId());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -17,6 +24,28 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrateHistory() {
+      try {
+        const history = await getChatHistory(sessionId);
+        if (!cancelled && history.length > 0) {
+          const hydrated = history.map((m: HistoryMessage) => ({
+            id: crypto.randomUUID(),
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(),
+          }));
+          setMessages(hydrated);
+        }
+      } catch {
+        // silently ignore — new session has no history
+      }
+    }
+    void hydrateHistory();
+    return () => { cancelled = true; };
+  }, [sessionId]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -32,23 +61,33 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
+    const botId = crypto.randomUUID();
+    const botMsg: Message = {
+      id: botId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+    setMessages((prev) => [...prev, botMsg]);
+
     try {
-      const res = await sendMessage(text, sessionId);
-      const botMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: res.response,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMsg]);
+      await streamMessage(text, sessionId, (chunk) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === botId ? { ...m, content: m.content + chunk } : m))
+        );
+      });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === botId ? { ...m, isStreaming: false } : m))
+      );
     } catch (err) {
-      const errMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Lo siento, ocurrió un error. Por favor intenta de nuevo.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId
+            ? { ...m, content: "Lo siento, ocurrió un error. Por favor intenta de nuevo.", isStreaming: false }
+            : m
+        )
+      );
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -56,8 +95,10 @@ export default function ChatPage() {
   }, [input, isLoading, sessionId]);
 
   async function handleNewSession() {
+    const newId = crypto.randomUUID();
+    saveSessionId(newId);
     setMessages([]);
-    setSessionId(uuidv4());
+    setSessionId(newId);
   }
 
   async function handleEndSession() {
@@ -66,8 +107,11 @@ export default function ChatPage() {
     } catch {
       // session may already be ended
     }
+    clearSessionId();
+    const newId = crypto.randomUUID();
+    saveSessionId(newId);
     setMessages([]);
-    setSessionId(uuidv4());
+    setSessionId(newId);
   }
 
   return (
@@ -122,7 +166,7 @@ export default function ChatPage() {
             <ChatMessage message={msg} />
           </div>
         ))}
-        {isLoading && <TypingIndicator />}
+        {isLoading && messages.at(-1)?.role !== "assistant" && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
