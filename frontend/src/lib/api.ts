@@ -176,7 +176,7 @@ export async function streamMessage(
       if (line.startsWith("data: ")) {
         const data = line.slice(6);
         if (data === "[DONE]") return;
-        if (data) onChunk(data);
+        onChunk(data === "" ? "\n" : data);
       }
     }
   }

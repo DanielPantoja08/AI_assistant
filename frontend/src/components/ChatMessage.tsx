@@ -42,8 +42,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         >
           {isUser ? (
             message.content
-          ) : message.isStreaming ? (
-            <span className="whitespace-pre-wrap">{message.content}</span>
+          ) : message.isStreaming && !message.content ? (
+            <div className="flex items-center gap-1 py-1">
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+            </div>
           ) : (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
