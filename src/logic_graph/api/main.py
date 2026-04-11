@@ -50,7 +50,7 @@ def run() -> None:
         "logic_graph.api.main:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=False,
+        reload=True,
     )
     server = uvicorn.Server(config)
 

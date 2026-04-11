@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.store.base import BaseStore
 
 from logic_graph.llm_factory import create_llm_for_node
@@ -17,8 +17,10 @@ from logic_graph.state import GraphState
 def _format_conversation(state: GraphState) -> str:
     parts = []
     for msg in state["messages"]:
-        role = "Usuario" if isinstance(msg, HumanMessage) else "Asistente"
-        parts.append(f"{role}: {msg.content}")
+        if isinstance(msg, HumanMessage):
+            parts.append(f"Usuario: {msg.content}")
+        elif isinstance(msg, AIMessage):
+            parts.append(f"Asistente: {msg.content}")
     return "\n".join(parts)
 
 
@@ -51,7 +53,7 @@ async def session_finalizer(state: GraphState, *, store: BaseStore) -> None:
 ## Conversación de la sesión actual
 {conversation_text}"""
 
-    response = llm.invoke([
+    response = await llm.ainvoke([
         SystemMessage(content=CUMULATIVE_SUMMARY_SYSTEM_PROMPT),
         HumanMessage(content=user_message),
     ])

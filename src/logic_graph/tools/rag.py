@@ -9,7 +9,7 @@ from logic_graph.ingest.clients import (
     get_gemini_client,
     get_or_create_collection,
 )
-from logic_graph.ingest.search import search
+from logic_graph.ingest.search import lookup_emergencia, search
 
 
 def _format_results(results: dict) -> str:
@@ -62,6 +62,22 @@ def buscar_tecnicas_tcc(query: str, top_k: int = 5) -> str:
     return _format_results(results)
 
 
+@tool
+def buscar_recursos_emergencia(tipo: str | None = None) -> str:
+    """Busca líneas de crisis y recursos de emergencia de salud mental en Colombia.
+
+    Usa esta herramienta cuando el usuario esté en crisis, mencione ideas suicidas
+    o autolesión, o pida números de ayuda de emergencia en salud mental.
+    Opcionalmente filtra por tipo de recurso (ej: 'linea_crisis', 'hospital').
+    """
+    return lookup_emergencia(get_chroma_client(), tipo)
+
+
 def get_rag_tools() -> list:
     """Return the list of RAG tools for the agent."""
-    return [buscar_guias_clinicas, buscar_ciencia_vs_pseudociencia, buscar_tecnicas_tcc]
+    return [
+        buscar_guias_clinicas,
+        buscar_ciencia_vs_pseudociencia,
+        buscar_tecnicas_tcc,
+        buscar_recursos_emergencia,
+    ]

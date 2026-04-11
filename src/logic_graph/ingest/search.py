@@ -26,32 +26,32 @@ def search(
     return results
 
 
-def lookup_emergencia(chroma_client: chromadb.PersistentClient, lookup_type: str | None = None) -> None:
-    """Direct metadata lookup in emergencia collection (no vector search)."""
+def lookup_emergencia(chroma_client: chromadb.PersistentClient, lookup_type: str | None = None) -> str:
+    """Direct metadata lookup in emergencia collection (no vector search).
+
+    Returns a formatted string with the matching emergency resources.
+    """
     collection = get_or_create_collection(chroma_client, "emergencia")
     kwargs: dict = {"where": {"type": lookup_type}} if lookup_type else {}
     results = collection.get(**kwargs)
 
     if not results["ids"]:
-        print("No se encontraron recursos de emergencia.")
-        return
+        return "No se encontraron recursos de emergencia."
 
-    print(f"\n{'=' * 70}")
-    print("Recursos de emergencia")
-    if lookup_type:
-        print(f"   Filtro: tipo = '{lookup_type}'")
-    print(f"{'=' * 70}")
-
-    for i, (entry_id, doc, meta) in enumerate(zip(
-        results["ids"], results["documents"], results["metadatas"]
-    )):
+    parts: list[str] = []
+    for i, (doc, meta) in enumerate(zip(results["documents"], results["metadatas"]), 1):
         name = meta.get("name") or doc
         phone = meta.get("phone", "")
         entry_type = meta.get("type", "")
-        print(f"\n  [{i + 1}] {name}")
+        description = meta.get("description", "")
+
+        entry_parts = [f"[{i}] {name}"]
         if entry_type:
-            print(f"      Tipo: {entry_type}")
+            entry_parts.append(f"    Tipo: {entry_type}")
         if phone:
-            print(f"      Telefono/Contacto: {phone}")
-        if meta.get("description"):
-            print(f"      Descripcion: {meta['description']}")
+            entry_parts.append(f"    Telefono/Contacto: {phone}")
+        if description:
+            entry_parts.append(f"    Descripcion: {description}")
+        parts.append("\n".join(entry_parts))
+
+    return "\n\n".join(parts)

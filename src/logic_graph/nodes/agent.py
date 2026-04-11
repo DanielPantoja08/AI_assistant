@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 
 from langchain_core.messages import SystemMessage, ToolMessage
 
@@ -12,11 +13,17 @@ from logic_graph.state import GraphState
 from logic_graph.tools.rag import get_rag_tools
 
 
-def agent_reasoner(state: GraphState) -> dict:
-    """Invoke the reasoning agent. Returns tool calls or a final answer."""
+@lru_cache(maxsize=1)
+def _get_llm_with_tools():
+    """Build and cache the agent LLM with bound RAG tools (one instance per process)."""
     llm = create_llm_for_node("agent")
     tools = get_rag_tools()
-    llm_with_tools = llm.bind_tools(tools)
+    return llm.bind_tools(tools)
+
+
+def agent_reasoner(state: GraphState) -> dict:
+    """Invoke the reasoning agent. Returns tool calls or a final answer."""
+    llm_with_tools = _get_llm_with_tools()
 
     user_profile = state.get("user_profile") or {}
     user_summary = state.get("user_summary") or ""
