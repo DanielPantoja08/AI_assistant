@@ -24,13 +24,13 @@ from logic_graph.routing.edges import (
 
 
 class TestRouteAfterCrisis:
-    def test_crisis_goes_to_emergency_responder(self):
+    def test_crisis_goes_to_crisis_agent(self):
         state = {
             "crisis_assessment": CrisisAssessment(
                 is_crisis=True, crisis_level=CrisisLevel.high, reasoning="test"
             )
         }
-        assert route_after_crisis(state) == "emergency_responder"
+        assert route_after_crisis(state) == "crisis_agent"
 
     def test_no_crisis_goes_to_agent_reasoner(self):
         state = {
@@ -40,7 +40,7 @@ class TestRouteAfterCrisis:
         }
         assert route_after_crisis(state) == "agent_reasoner"
 
-    def test_imminent_crisis_goes_to_emergency_responder(self):
+    def test_imminent_crisis_goes_to_crisis_agent(self):
         state = {
             "crisis_assessment": CrisisAssessment(
                 is_crisis=True,
@@ -49,7 +49,7 @@ class TestRouteAfterCrisis:
                 reasoning="test",
             )
         }
-        assert route_after_crisis(state) == "emergency_responder"
+        assert route_after_crisis(state) == "crisis_agent"
 
 
 # ---------------------------------------------------------------------------

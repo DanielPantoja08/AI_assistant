@@ -7,9 +7,9 @@ from logic_graph.state import GraphState
 
 def route_after_crisis(
     state: GraphState,
-) -> Literal["emergency_responder", "agent_reasoner"]:
+) -> Literal["crisis_agent", "agent_reasoner"]:
     if state["crisis_assessment"].is_crisis:
-        return "emergency_responder"
+        return "crisis_agent"
     return "agent_reasoner"
 
 
