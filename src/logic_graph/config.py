@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     memory_summarizer_provider: str = "groq"
     memory_summarizer_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
 
+    # crisis_agent
+    crisis_agent_provider: str = "groq"
+    crisis_agent_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+
     # database
     database_url: str
 
