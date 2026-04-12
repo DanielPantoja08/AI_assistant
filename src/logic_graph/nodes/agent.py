@@ -13,6 +13,40 @@ from logic_graph.state import GraphState
 from logic_graph.tools.rag import get_rag_tools
 
 
+_PHQ9_BEHAVIORAL_GUIDE: dict[str, str] = {
+    "minimal": "El usuario no presenta síntomas depresivos significativos hoy. Modo normal: psicoeducación estándar y escucha activa.",
+    "mild": "El usuario presenta síntomas leves. Modo normal con atención empática adicional.",
+    "moderate": "El usuario presenta síntomas moderados. Prioriza la escucha activa y valida antes de psicoeducar. Evita sobrecargar con información.",
+    "moderately_severe": "ATENCIÓN: síntomas moderadamente severos. Tono cuidadoso. Valida primero siempre. Evita técnicas de autoexposición. Permanece alerta a señales de crisis emergentes.",
+    "severe": "ALERTA: síntomas severos. Máxima prioridad a la validación emocional. No uses técnicas de autoexposición. Evalúa cada mensaje en busca de señales de crisis. Recomienda apoyo profesional cuando sea apropiado.",
+}
+
+_ASQ_GUIDE: dict[str, str] = {
+    "negative": "Sin indicadores suicidas en la evaluación de hoy.",
+    "positive_non_acute": "El usuario expresó pensamientos suicidas pasivos hoy. Mayor sensibilidad requerida; orienta a recursos si el tema surge.",
+    "positive_acute": "ALERTA MÁXIMA: el usuario expresó ideación suicida con intención o plan hoy. Ante cualquier señal de malestar, prioriza la seguridad.",
+}
+
+
+def _build_assessment_section(last_assessment: dict | None) -> str:
+    if not last_assessment:
+        return "Sin evaluación disponible para hoy (el usuario no completó los cuestionarios)."
+
+    phq9_score = last_assessment.get("phq9_score")
+    phq9_severity = last_assessment.get("phq9_severity", "")
+    asq_result = last_assessment.get("asq_result", "")
+
+    phq9_guide = _PHQ9_BEHAVIORAL_GUIDE.get(phq9_severity, "Severidad desconocida.")
+    asq_guide = _ASQ_GUIDE.get(asq_result, "Resultado ASQ desconocido.")
+
+    return (
+        f"- **PHQ-9:** {phq9_score} puntos — severidad: **{phq9_severity}**\n"
+        f"  {phq9_guide}\n"
+        f"- **ASQ:** {asq_result}\n"
+        f"  {asq_guide}"
+    )
+
+
 @lru_cache(maxsize=1)
 def _get_llm_with_tools():
     """Build and cache the agent LLM with bound RAG tools (one instance per process)."""
@@ -27,10 +61,12 @@ def agent_reasoner(state: GraphState) -> dict:
 
     user_profile = state.get("user_profile") or {}
     user_summary = state.get("user_summary") or ""
+    last_assessment = state.get("last_assessment")
 
     system_prompt = AGENT_SYSTEM_PROMPT.format(
         user_profile=user_profile,
         user_summary=user_summary,
+        assessment_section=_build_assessment_section(last_assessment),
     )
 
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])

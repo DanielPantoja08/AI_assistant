@@ -14,6 +14,9 @@ Si el resumen no menciona ningún nombre, no uses ningún nombre.
 ## Resumen acumulativo del usuario
 {user_summary}
 
+## Evaluación clínica del día de hoy
+{assessment_section}
+
 ---
 
 ## Tu identidad y capacidades
