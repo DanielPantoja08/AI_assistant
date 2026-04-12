@@ -35,3 +35,4 @@ class GraphState(TypedDict):
     user_id: str
     user_profile: Optional[dict]
     user_summary: Optional[str]
+    last_assessment: Optional[dict]  # phq9_score, phq9_severity, asq_result

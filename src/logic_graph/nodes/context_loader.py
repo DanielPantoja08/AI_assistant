@@ -13,4 +13,16 @@ async def load_user_context(state: GraphState, *, store: BaseStore) -> dict:
 
     user_summary = await load_cumulative_summary(store, user_id)
 
-    return {"user_profile": profile_data, "user_summary": user_summary}
+    last_assessment = None
+    if profile_data and profile_data.get("phq9_score") is not None:
+        last_assessment = {
+            "phq9_score": profile_data.get("phq9_score"),
+            "phq9_severity": profile_data.get("phq9_severity"),
+            "asq_result": profile_data.get("asq_result"),
+        }
+
+    return {
+        "user_profile": profile_data,
+        "user_summary": user_summary,
+        "last_assessment": last_assessment,
+    }
