@@ -28,7 +28,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password);
-      navigate("/chat");
+      navigate("/assessments");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {

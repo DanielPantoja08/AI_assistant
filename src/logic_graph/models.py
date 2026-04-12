@@ -81,6 +81,10 @@ class ClinicalProfile(BaseModel):
     avg_distress: float
     techniques_used: list[str] = Field(default_factory=list)
     last_session_date: str
+    phq9_score: int | None = None
+    phq9_severity: str | None = None
+    asq_result: str | None = None
+    last_assessment_date: str | None = None
 
 
 class SessionSummary(BaseModel):

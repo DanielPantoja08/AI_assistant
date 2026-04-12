@@ -42,7 +42,7 @@ export default function RegisterPage() {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
       });
-      navigate("/chat");
+      navigate("/assessments");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear cuenta");
     } finally {

@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LogOut, MessageSquare, FileUp, BrainCircuit, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAssessment } from "@/context/AssessmentContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -13,8 +14,12 @@ const navItems = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const { assessmentNeeded } = useAssessment();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Hide sidebar entirely while assessments are pending
+  const hideSidebar = assessmentNeeded === true || assessmentNeeded === null;
 
   function handleLogout() {
     logout();
@@ -81,11 +86,13 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen bg-page overflow-hidden">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex">{sidebar}</div>
+      {/* Desktop sidebar — hidden during assessments */}
+      {!hideSidebar && (
+        <div className="hidden lg:flex">{sidebar}</div>
+      )}
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {/* Mobile sidebar overlay — hidden during assessments */}
+      {!hideSidebar && sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
             className="absolute inset-0 bg-black/30"
@@ -97,22 +104,24 @@ export default function AppLayout() {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile header */}
-        <header className="flex items-center gap-3 border-b border-border-soft bg-white px-4 py-3 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </Button>
-          <div className="flex items-center gap-2">
-            <BrainCircuit size={18} className="text-primary" />
-            <span className="font-display font-semibold text-slate-800 text-sm">
-              Asistente Psicológico
-            </span>
-          </div>
-        </header>
+        {/* Mobile header — hidden during assessments */}
+        {!hideSidebar && (
+          <header className="flex items-center gap-3 border-b border-border-soft bg-white px-4 py-3 lg:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </Button>
+            <div className="flex items-center gap-2">
+              <BrainCircuit size={18} className="text-primary" />
+              <span className="font-display font-semibold text-slate-800 text-sm">
+                Asistente Psicológico
+              </span>
+            </div>
+          </header>
+        )}
 
         <main className="flex flex-1 flex-col overflow-hidden">
           <Outlet />

@@ -9,7 +9,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 
 from logic_graph.api import deps
-from logic_graph.api.routers import auth, chat, ingest
+from logic_graph.api.routers import assessments, auth, chat, ingest
 from logic_graph.app import build_graph
 from logic_graph.config import settings
 
@@ -41,6 +41,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(ingest.router)
+app.include_router(assessments.router)
 
 
 def run() -> None:

@@ -215,3 +215,40 @@ export async function ingestPdf(file: File, collection: string): Promise<IngestR
   }
   return res.json() as Promise<IngestResponse>;
 }
+
+// ---------------------------------------------------------------------------
+// Assessments
+// ---------------------------------------------------------------------------
+
+export interface AssessmentStatus {
+  needed: boolean;
+  phq9_score: number | null;
+  phq9_severity: string | null;
+  asq_result: string | null;
+}
+
+export interface AssessmentResult {
+  phq9_score: number;
+  phq9_severity: string;
+  asq_result: string;
+}
+
+export interface AssessmentSubmission {
+  phq9_answers: number[];
+  asq_answers: boolean[];
+  asq_acuity_answer: boolean | null;
+}
+
+export async function getAssessmentStatus(): Promise<AssessmentStatus> {
+  return apiFetch<AssessmentStatus>("/assessments/status");
+}
+
+export async function submitAssessments(
+  submission: AssessmentSubmission
+): Promise<AssessmentResult> {
+  return apiFetch<AssessmentResult>("/assessments/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(submission),
+  });
+}
