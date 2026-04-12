@@ -4,6 +4,7 @@ from langgraph.store.memory import InMemoryStore
 
 from logic_graph.nodes import (
     agent_reasoner,
+    crisis_agent,
     crisis_detector,
     emergency_responder,
     hallucination_evaluator,
@@ -28,6 +29,7 @@ def build_graph(
     # --- Nodes ---
     builder.add_node("load_user_context", load_user_context)
     builder.add_node("crisis_detector", crisis_detector)
+    builder.add_node("crisis_agent", crisis_agent)
     builder.add_node("emergency_responder", emergency_responder)
     builder.add_node("agent_reasoner", agent_reasoner)
     builder.add_node("tool_executor", tool_executor)
@@ -44,7 +46,7 @@ def build_graph(
     builder.add_conditional_edges(
         "crisis_detector",
         route_after_crisis,
-        ["emergency_responder", "agent_reasoner"],
+        ["crisis_agent", "agent_reasoner"],
     )
 
     # ReAct loop: agent ↔ tool_executor
@@ -63,6 +65,7 @@ def build_graph(
     )
 
     # Terminal paths
+    builder.add_edge("crisis_agent", "emergency_responder")
     builder.add_edge("emergency_responder", "memory_updater")
     builder.add_edge("memory_updater", END)
 

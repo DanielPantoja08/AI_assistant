@@ -8,6 +8,14 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from logic_graph.models import HallucinationGrade
+from logic_graph.nodes.agent import _get_llm_with_tools
+
+
+@pytest.fixture(autouse=True)
+def clear_llm_cache():
+    _get_llm_with_tools.cache_clear()
+    yield
+    _get_llm_with_tools.cache_clear()
 
 
 # ---------------------------------------------------------------------------
