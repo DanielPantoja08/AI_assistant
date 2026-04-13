@@ -25,6 +25,7 @@ class GraphState(TypedDict):
 
     # Response generation
     generated_response: str
+    emergency_text: str  # set by emergency_responder; emitted separately in streaming
     hallucination_grade: Optional[HallucinationGrade]
     regeneration_count: int  # Max 2 regenerations
 

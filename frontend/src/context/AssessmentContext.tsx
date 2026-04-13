@@ -9,22 +9,25 @@ import {
 import { getAssessmentStatus } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const ASSESSMENT_DONE_KEY = "lg_assessment_done";
-
 /** Returns today's date as YYYY-MM-DD in local time */
 function todayLocal(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Check if assessments were already completed today (cached in localStorage) */
-function isCompletedToday(): boolean {
-  return localStorage.getItem(ASSESSMENT_DONE_KEY) === todayLocal();
+/** User-scoped localStorage key so different users don't share assessment state */
+function assessmentKey(userId: string): string {
+  return `lg_assessment_done_${userId}`;
 }
 
-/** Persist today's completion in localStorage */
-function saveCompletedToday(): void {
-  localStorage.setItem(ASSESSMENT_DONE_KEY, todayLocal());
+/** Check if assessments were already completed today for this user */
+function isCompletedToday(userId: string): boolean {
+  return localStorage.getItem(assessmentKey(userId)) === todayLocal();
+}
+
+/** Persist today's completion in localStorage for this user */
+function saveCompletedToday(userId: string): void {
+  localStorage.setItem(assessmentKey(userId), todayLocal());
 }
 
 interface AssessmentContextValue {
@@ -37,21 +40,18 @@ interface AssessmentContextValue {
 const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
-  const { token } = useAuth();
-  const [assessmentNeeded, setAssessmentNeeded] = useState<boolean | null>(() => {
-    // Fast path: if already completed today, skip the API call
-    if (token && isCompletedToday()) return false;
-    return null;
-  });
+  const { token, user } = useAuth();
+  const [assessmentNeeded, setAssessmentNeeded] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    // Wait until we have both a token and the resolved user identity
+    if (!token || !user) {
       setAssessmentNeeded(null);
       return;
     }
 
-    // Already completed today — no need to ask the backend
-    if (isCompletedToday()) {
+    // Fast path: already completed today for this specific user
+    if (isCompletedToday(user.id)) {
       setAssessmentNeeded(false);
       return;
     }
@@ -63,7 +63,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           setAssessmentNeeded(status.needed);
           // If the backend says not needed, cache it locally too
-          if (!status.needed) saveCompletedToday();
+          if (!status.needed) saveCompletedToday(user.id);
         }
       } catch {
         // If backend is unreachable, assume needed to be safe
@@ -71,12 +71,12 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, user]);
 
   const markCompleted = useCallback(() => {
-    saveCompletedToday();
+    if (user) saveCompletedToday(user.id);
     setAssessmentNeeded(false);
-  }, []);
+  }, [user]);
 
   return (
     <AssessmentContext.Provider value={{ assessmentNeeded, markCompleted }}>

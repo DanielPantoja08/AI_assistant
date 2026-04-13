@@ -50,18 +50,24 @@ def crisis_detector(state: GraphState) -> dict:
     return {"crisis_assessment": result}
 
 
-def emergency_responder(state: GraphState) -> dict:
-    response_text = (
-        "Entiendo que estás pasando por un momento muy difícil y quiero que sepas "
-        "que no estás solo/a. Tu bienestar es lo más importante ahora mismo.\n\n"
-        "Por favor, comunícate con alguna de estas líneas de ayuda disponibles "
-        "en Colombia:\n\n"
-        "📞 **Línea 106** (ICBF — atención en crisis): marca **106** desde cualquier teléfono.\n"
-        "📞 **Línea 141** (Línea de la vida): marca **141**.\n"
-        "📞 **Línea 123** (Emergencias): marca **123**.\n\n"
-        "Estas líneas están disponibles las 24 horas del día, los 7 días de la semana, "
-        "y cuentan con profesionales capacitados para ayudarte.\n\n"
-        "Recuerda: pedir ayuda es un acto de valentía. Mereces apoyo y acompañamiento."
-    )
+_EMERGENCY_TEXT = (
+    "Entiendo que estás pasando por un momento muy difícil y quiero que sepas "
+    "que no estás solo/a. Tu bienestar es lo más importante ahora mismo.\n\n"
+    "Por favor, comunícate con alguna de estas líneas de ayuda disponibles "
+    "en Colombia:\n\n"
+    "📞 **Línea 106** (ICBF — atención en crisis): marca **106** desde cualquier teléfono.\n"
+    "📞 **Línea 141** (Línea de la vida): marca **141**.\n"
+    "📞 **Línea 123** (Emergencias): marca **123**.\n\n"
+    "Estas líneas están disponibles las 24 horas del día, los 7 días de la semana, "
+    "y cuentan con profesionales capacitados para ayudarte.\n\n"
+    "Recuerda: pedir ayuda es un acto de valentía. Mereces apoyo y acompañamiento."
+)
 
-    return {"generated_response": response_text}
+
+def emergency_responder(state: GraphState) -> dict:
+    existing = state.get("generated_response", "")
+    separator = "\n\n" if existing else ""
+    return {
+        "generated_response": existing + separator + _EMERGENCY_TEXT,
+        "emergency_text": _EMERGENCY_TEXT,
+    }

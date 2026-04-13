@@ -68,11 +68,20 @@ async def chat_stream(
     config = {"configurable": {"thread_id": thread_id}}
 
     async def event_generator():
+        emergency_text: str | None = None
         async for event in graph.astream_events(initial_state, config, version="v2"):
             if event["event"] == "on_chat_model_stream":
                 chunk_content = event["data"]["chunk"].content
                 if chunk_content:
                     yield f"data: {chunk_content}\n\n"
+            elif event["event"] == "on_chain_end" and event.get("name") == "emergency_responder":
+                output = event["data"].get("output", {})
+                emergency_text = output.get("emergency_text", "")
+        if emergency_text:
+            yield "data: \n\n"
+            yield "data: \n\n"
+            for line in emergency_text.split("\n"):
+                yield f"data: {line}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(

@@ -11,6 +11,12 @@ class TestEmergencyResponder:
         assert isinstance(result, dict)
         assert "generated_response" in result
 
+    def test_returns_emergency_text_field(self):
+        result = emergency_responder({})
+        assert "emergency_text" in result
+        assert isinstance(result["emergency_text"], str)
+        assert len(result["emergency_text"]) > 0
+
     def test_response_is_nonempty_string(self):
         result = emergency_responder({})
         assert isinstance(result["generated_response"], str)
@@ -34,7 +40,16 @@ class TestEmergencyResponder:
         assert "Colombia" in response
 
     def test_response_is_deterministic(self):
-        """emergency_responder returns fixed text, so two calls must match."""
+        """emergency_responder returns fixed text, so two calls with empty state match."""
         r1 = emergency_responder({})
         r2 = emergency_responder({})
         assert r1 == r2
+
+    def test_appends_to_existing_generated_response(self):
+        """When crisis_agent already set generated_response, its text is preserved."""
+        prior = "Texto empático del crisis_agent."
+        result = emergency_responder({"generated_response": prior})
+        combined = result["generated_response"]
+        assert combined.startswith(prior)
+        assert "106" in combined
+        assert result["emergency_text"] not in combined[:len(prior)]  # prior part intact

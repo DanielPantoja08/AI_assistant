@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BrainCircuit,
@@ -124,10 +124,11 @@ export default function AssessmentPage() {
   const [fade, setFade] = useState(true);
 
   // If assessments already done, redirect to chat
-  if (assessmentNeeded === false) {
-    navigate("/chat", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (assessmentNeeded === false) {
+      navigate("/chat", { replace: true });
+    }
+  }, [assessmentNeeded, navigate]);
 
   // Progress calculation
   const progress = useMemo(() => {
