@@ -14,6 +14,7 @@ from logic_graph.models import (
 from logic_graph.routing.edges import (
     route_after_agent,
     route_after_crisis,
+    route_after_crisis_agent,
     route_after_hallucination,
 )
 
@@ -50,6 +51,40 @@ class TestRouteAfterCrisis:
             )
         }
         assert route_after_crisis(state) == "crisis_agent"
+
+
+# ---------------------------------------------------------------------------
+# route_after_crisis_agent
+# ---------------------------------------------------------------------------
+
+
+class TestRouteAfterCrisisAgent:
+    def _make_message_with_tool_calls(self, calls):
+        msg = MagicMock()
+        msg.tool_calls = calls
+        return msg
+
+    def _make_message_without_tool_calls(self):
+        msg = MagicMock()
+        msg.tool_calls = []
+        return msg
+
+    def test_tool_calls_go_to_crisis_tool_executor(self):
+        msg = self._make_message_with_tool_calls(
+            [{"name": "buscar_recursos_emergencia", "args": {}, "id": "1"}]
+        )
+        state = {"messages": [msg]}
+        assert route_after_crisis_agent(state) == "crisis_tool_executor"
+
+    def test_no_tool_calls_go_to_memory_updater(self):
+        msg = self._make_message_without_tool_calls()
+        state = {"messages": [msg]}
+        assert route_after_crisis_agent(state) == "memory_updater"
+
+    def test_no_tool_calls_attribute_goes_to_memory_updater(self):
+        msg = MagicMock(spec=[])
+        state = {"messages": [msg]}
+        assert route_after_crisis_agent(state) == "memory_updater"
 
 
 # ---------------------------------------------------------------------------

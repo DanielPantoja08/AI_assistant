@@ -13,6 +13,15 @@ def route_after_crisis(
     return "agent_reasoner"
 
 
+def route_after_crisis_agent(
+    state: GraphState,
+) -> Literal["crisis_tool_executor", "memory_updater"]:
+    last_message = state["messages"][-1]
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        return "crisis_tool_executor"
+    return "memory_updater"
+
+
 def route_after_agent(
     state: GraphState,
 ) -> Literal["tool_executor", "hallucination_evaluator"]:

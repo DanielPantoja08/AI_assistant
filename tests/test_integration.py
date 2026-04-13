@@ -18,12 +18,14 @@ from logic_graph.models import (
     HallucinationGrade,
     SessionMetadata,
 )
+from logic_graph.nodes.crisis_agent import _get_crisis_llm_with_tools
 
 # Patch create_llm_for_node at the module level where it's imported.
 # The agent node and other nodes use local bindings via `from X import Y`.
 _PATCH_TARGETS = [
     "logic_graph.nodes.agent.create_llm_for_node",
     "logic_graph.nodes.crisis.create_llm_for_node",
+    "logic_graph.nodes.crisis_agent.create_llm_for_node",
     "logic_graph.nodes.hallucination.create_llm_for_node",
     "logic_graph.nodes.memory.create_llm_for_node",
 ]
@@ -108,6 +110,7 @@ def _crisis_mocks() -> dict[str, MagicMock]:
                 reasoning="test",
             ),
         ),
+        "crisis_agent": _make_mock_llm(plain_content="Entiendo que estás pasando por algo muy difícil."),
         "memory_summarizer": _make_mock_llm(
             structured_return=SessionMetadata(
                 detected_emotion=EmotionType.neutral,
@@ -175,7 +178,8 @@ class TestAgentPath:
 
 
 class TestCrisisPath:
-    async def test_crisis_triggers_emergency_responder(self):
+    async def test_crisis_triggers_crisis_agent(self):
+        _get_crisis_llm_with_tools.cache_clear()
         factory_fn = _build_llm_factory(_crisis_mocks())
         patches = _apply_patches(factory_fn)
         try:
@@ -193,9 +197,9 @@ class TestCrisisPath:
 
             assert result is not None
             assert "generated_response" in result
-            # emergency_responder hardcodes "106" in its response
-            assert "106" in result["generated_response"]
+            assert len(result["generated_response"]) > 0
         finally:
+            _get_crisis_llm_with_tools.cache_clear()
             _stop_patches(patches)
 
 

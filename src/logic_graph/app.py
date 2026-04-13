@@ -6,7 +6,7 @@ from logic_graph.nodes import (
     agent_reasoner,
     crisis_agent,
     crisis_detector,
-    emergency_responder,
+    crisis_tool_executor,
     hallucination_evaluator,
     load_user_context,
     memory_updater,
@@ -15,6 +15,7 @@ from logic_graph.nodes import (
 from logic_graph.routing.edges import (
     route_after_agent,
     route_after_crisis,
+    route_after_crisis_agent,
     route_after_hallucination,
 )
 from logic_graph.state import GraphState
@@ -30,7 +31,7 @@ def build_graph(
     builder.add_node("load_user_context", load_user_context)
     builder.add_node("crisis_detector", crisis_detector)
     builder.add_node("crisis_agent", crisis_agent)
-    builder.add_node("emergency_responder", emergency_responder)
+    builder.add_node("crisis_tool_executor", crisis_tool_executor)
     builder.add_node("agent_reasoner", agent_reasoner)
     builder.add_node("tool_executor", tool_executor)
     builder.add_node("hallucination_evaluator", hallucination_evaluator)
@@ -49,6 +50,14 @@ def build_graph(
         ["crisis_agent", "agent_reasoner"],
     )
 
+    # Crisis ReAct loop: crisis_agent ↔ crisis_tool_executor
+    builder.add_conditional_edges(
+        "crisis_agent",
+        route_after_crisis_agent,
+        ["crisis_tool_executor", "memory_updater"],
+    )
+    builder.add_edge("crisis_tool_executor", "crisis_agent")
+
     # ReAct loop: agent ↔ tool_executor
     builder.add_conditional_edges(
         "agent_reasoner",
@@ -64,9 +73,7 @@ def build_graph(
         ["memory_updater", "agent_reasoner"],
     )
 
-    # Terminal paths
-    builder.add_edge("crisis_agent", "emergency_responder")
-    builder.add_edge("emergency_responder", "memory_updater")
+    # Terminal path
     builder.add_edge("memory_updater", END)
 
     # Compile

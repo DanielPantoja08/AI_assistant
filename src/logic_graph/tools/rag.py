@@ -81,3 +81,8 @@ def get_rag_tools() -> list:
         buscar_tecnicas_tcc,
         buscar_recursos_emergencia,
     ]
+
+
+def get_emergency_tools() -> list:
+    """Return only the emergency resource tool for the crisis agent."""
+    return [buscar_recursos_emergencia]
