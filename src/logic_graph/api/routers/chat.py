@@ -94,9 +94,13 @@ async def chat_stream(
                     break
 
                 if event["event"] == "on_chat_model_stream":
-                    chunk_content = event["data"]["chunk"].content
-                    if chunk_content:
-                        yield f"data: {chunk_content}\n\n"
+                    node = event.get("metadata", {}).get("langgraph_node", "")
+                    if node in ("agent_reasoner", "crisis_agent"):
+                        chunk = event["data"]["chunk"]
+                        # Only stream text chunks; skip tool-call generation chunks
+                        # (tool_call_chunks is non-empty when the model is emitting a tool call)
+                        if chunk.content and not getattr(chunk, "tool_call_chunks", []):
+                            yield f"data: {chunk.content}\n\n"
                 elif event["event"] == "on_chain_end" and event.get("name") == "emergency_responder":
                     output = event["data"].get("output", {})
                     emergency_text = output.get("emergency_text", "")

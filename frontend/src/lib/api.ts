@@ -175,7 +175,7 @@ export async function streamMessage(
     for (const line of text.split("\n")) {
       if (line.startsWith("data: ")) {
         const data = line.slice(6);
-        if (data === "[DONE]") return;
+        if (data.trimEnd() === "[DONE]") return;
         onChunk(data === "" ? "\n" : data);
       }
     }
