@@ -10,25 +10,44 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d logic_graph" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   api:
     build: .
-    ports:
-      - "8000:8000"
     env_file: .env
     environment:
-      # Override DB URL to use the 'db' service name inside the Docker network
       LG_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/logic_graph
       LG_CHROMA_DB_PATH: /app/chroma_db
+      LG_OLLAMA_BASE_URL: http://ollama:11434
     volumes:
       - chroma_data:/app/chroma_db
+      - ./src:/app/src
+    networks:
+      - app_net
     depends_on:
       db:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     restart: unless-stopped
 
@@ -36,10 +55,16 @@ services:
     build: ./frontend
     ports:
       - "3000:80"
+    networks:
+      - app_net
     depends_on:
       - api
     restart: unless-stopped
 
+networks:
+  app_net:
+
 volumes:
   postgres_data:
   chroma_data:
+  ollama_data:

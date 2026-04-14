@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from typing import Optional
 
@@ -69,14 +70,40 @@ async def chat_stream(
 
     async def event_generator():
         emergency_text: str | None = None
-        async for event in graph.astream_events(initial_state, config, version="v2"):
-            if event["event"] == "on_chat_model_stream":
-                chunk_content = event["data"]["chunk"].content
-                if chunk_content:
-                    yield f"data: {chunk_content}\n\n"
-            elif event["event"] == "on_chain_end" and event.get("name") == "emergency_responder":
-                output = event["data"].get("output", {})
-                emergency_text = output.get("emergency_text", "")
+        gen = graph.astream_events(initial_state, config, version="v2")
+        pending: asyncio.Task | None = None
+
+        try:
+            while True:
+                if pending is None:
+                    pending = asyncio.ensure_future(gen.__anext__())
+
+                done, _ = await asyncio.wait({pending}, timeout=20.0)
+
+                if not done:
+                    # No token yet — send keepalive comment to prevent nginx/browser timeout
+                    yield ": keepalive\n\n"
+                    continue
+
+                pending = None
+                try:
+                    event = done.pop().result()
+                except StopAsyncIteration:
+                    break
+                except Exception:
+                    break
+
+                if event["event"] == "on_chat_model_stream":
+                    chunk_content = event["data"]["chunk"].content
+                    if chunk_content:
+                        yield f"data: {chunk_content}\n\n"
+                elif event["event"] == "on_chain_end" and event.get("name") == "emergency_responder":
+                    output = event["data"].get("output", {})
+                    emergency_text = output.get("emergency_text", "")
+        finally:
+            if pending and not pending.done():
+                pending.cancel()
+
         if emergency_text:
             yield "data: \n\n"
             yield "data: \n\n"
@@ -87,7 +114,11 @@ async def chat_stream(
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={"X-Session-Id": session_id},
+        headers={
+            "X-Session-Id": session_id,
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

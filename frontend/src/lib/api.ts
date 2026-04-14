@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 const TOKEN_KEY = "lg_token";
 const SESSION_KEY = "lg_session";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours

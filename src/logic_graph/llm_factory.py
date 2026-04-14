@@ -5,16 +5,22 @@ from langchain_core.language_models import BaseChatModel
 
 def create_llm(provider: str, model: str, **kwargs) -> BaseChatModel:
     """Instantiate a chat model for the given provider and model name."""
+    from logic_graph.config import settings as _settings
+
     match provider:
         case "gemini":
             from langchain_google_genai import ChatGoogleGenerativeAI
-            return ChatGoogleGenerativeAI(model=model, **kwargs)
+            return ChatGoogleGenerativeAI(
+                model=model, google_api_key=_settings.google_api_key, **kwargs
+            )
         case "groq":
             from langchain_groq import ChatGroq
-            return ChatGroq(model=model, **kwargs)
+            return ChatGroq(
+                model=model, api_key=_settings.groq_api_key, **kwargs
+            )
         case "ollama":
             from langchain_ollama import ChatOllama
-            return ChatOllama(model=model, **kwargs)
+            return ChatOllama(model=model, base_url=_settings.ollama_base_url, **kwargs)
         case _:
             raise ValueError(f"Unsupported provider: {provider}")
 

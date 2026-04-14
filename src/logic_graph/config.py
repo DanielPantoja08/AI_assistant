@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # agent (reasoning agent with tool calling — uses Ollama gemma4:e4b)
     agent_provider: str = "ollama"
-    agent_model: str = "gemma4:e4b"
+    agent_model: str = "gemma4:31b-cloud"
 
     # crisis_detector
     crisis_detector_provider: str = "groq"
@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     memory_summarizer_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
 
     # crisis_agent
-    crisis_agent_provider: str = "groq"
-    crisis_agent_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+    crisis_agent_provider: str = "ollama"
+    crisis_agent_model: str = "gemma4:31b-cloud"
 
     # database
     database_url: str
@@ -68,6 +68,9 @@ class Settings(BaseSettings):
 
     # ChromaDB
     chroma_db_path: str = "./chroma_db"
+
+    # Ollama
+    ollama_base_url: str = "http://localhost:11434"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

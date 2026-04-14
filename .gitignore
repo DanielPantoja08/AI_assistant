@@ -7,6 +7,7 @@ dist/
 .python-version
 uv.lock
 *.md
+!README.md
 *.png
 .claude/
 .pytest_cache/
@@ -17,3 +18,6 @@ chroma_db/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+extracted_images/
+extracted_tables/
+docs/

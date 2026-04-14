@@ -22,6 +22,17 @@ FROM python:3.14-slim AS runtime
 
 WORKDIR /app
 
+# System libraries required by OpenCV (cv2) / docling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libxcb1 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy virtual environment and source from builder
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src ./src
@@ -37,7 +48,8 @@ RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH="/app/src"
 
 EXPOSE 8000
 

@@ -14,6 +14,16 @@ from logic_graph.app import build_graph
 from logic_graph.config import settings
 
 
+async def _warmup_ollama() -> None:
+    """Send a minimal request to Ollama so the model is loaded before the first user message."""
+    try:
+        from logic_graph.llm_factory import create_llm_for_node
+        llm = create_llm_for_node("agent")
+        await llm.ainvoke("hola")
+    except Exception:
+        pass  # warmup failure is non-fatal
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with AsyncPostgresSaver.from_conn_string(
@@ -27,6 +37,7 @@ async def lifespan(app: FastAPI):
             deps._checkpointer = checkpointer
             deps._store = store
             deps._graph = build_graph(checkpointer=checkpointer, store=store)
+            asyncio.create_task(_warmup_ollama())  # fire-and-forget, non-blocking
             yield
 
 

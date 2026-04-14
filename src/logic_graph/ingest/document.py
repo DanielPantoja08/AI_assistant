@@ -3,15 +3,10 @@
 import io
 import logging
 import time
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
-
-from docling_core.types.doc import PictureItem, TableItem
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.chunking import HybridChunker
 
 from google import genai
 
@@ -19,6 +14,25 @@ from logic_graph.ingest.config import IMAGE_RESOLUTION_SCALE, OUTPUT_DIR, TABLES
 from logic_graph.ingest.captioning import generate_caption
 
 _log = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=1)
+def _get_converter() -> "DocumentConverter":
+    """Build and cache the Docling DocumentConverter (loads ML weights once per process)."""
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.document_converter import DocumentConverter, PdfFormatOption
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
+    pipeline_options.generate_page_images = False
+    pipeline_options.generate_picture_images = True
+
+    return DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+        }
+    )
 
 
 def process_document(
@@ -30,24 +44,15 @@ def process_document(
     - images: lista de dicts con caption generado por Gemini y metadata
     - tables: lista de dicts con markdown de la tabla y metadata
     """
-    
-    # Configurar pipeline para extraer imágenes
-    pipeline_options = PdfPipelineOptions()
-    pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
-    pipeline_options.generate_page_images = False
-    pipeline_options.generate_picture_images = True
+    from docling_core.types.doc import PictureItem, TableItem
+    from docling.chunking import HybridChunker
 
-    converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-        }
-    )
-
+    converter = _get_converter()
     conv_res = converter.convert(str(source))
     doc = conv_res.document
 
     # ── Extraer chunks de texto ──
-    
+
     chunker = HybridChunker()
     chunk_iter = chunker.chunk(dl_doc=doc)
 
