@@ -2,6 +2,8 @@ import { BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 export interface Message {
   id: string;
@@ -49,7 +51,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               <span className="typing-dot" />
             </div>
           ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
               {message.content}
             </ReactMarkdown>
           )}
